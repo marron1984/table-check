@@ -15,6 +15,14 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     headers: { ...getHeaders(), ...options?.headers },
   });
 
+  if (res.status === 401) {
+    // 認証エラー: ログアウトしてリロード
+    localStorage.removeItem("staffId");
+    localStorage.removeItem("staffName");
+    window.location.reload();
+    throw new Error("認証が必要です");
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `API error ${res.status}`);

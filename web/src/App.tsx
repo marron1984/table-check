@@ -11,7 +11,7 @@ import { TagManagement } from "./pages/TagManagement";
 import { SyncStatus } from "./pages/SyncStatus";
 
 export function App() {
-  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem("staffId"));
+  const [loggedIn, setLoggedIn] = useState(() => localStorage.getItem("staffId") === "demo-staff");
   const [staffName, setStaffName] = useState(() => localStorage.getItem("staffName") || "");
 
   const handleLogin = useCallback((staffId: string, name: string) => {

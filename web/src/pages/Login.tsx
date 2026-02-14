@@ -1,17 +1,14 @@
 import { useState } from "react";
 
 export function Login({ onLogin }: { onLogin: (staffId: string, name: string) => void }) {
-  const [staffId, setStaffId] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!staffId.trim()) {
-      setError("スタッフIDを入力してください");
-      return;
-    }
-    onLogin(staffId.trim(), name.trim() || staffId.trim());
+    const displayName = name.trim() || "管理者";
+    // demo-staff はシードで作成済みのADMINアカウント
+    onLogin("demo-staff", displayName);
   };
 
   return (
@@ -24,26 +21,19 @@ export function Login({ onLogin }: { onLogin: (staffId: string, name: string) =>
         <form onSubmit={handleSubmit}>
           {error && <div className="form-error">{error}</div>}
           <div className="form-row">
-            <label className="form-label">スタッフID</label>
-            <input
-              className="form-input"
-              type="text"
-              value={staffId}
-              onChange={(e) => { setStaffId(e.target.value); setError(""); }}
-              placeholder="例: staff-001"
-              autoFocus
-            />
-          </div>
-          <div className="form-row">
-            <label className="form-label">表示名（任意）</label>
+            <label className="form-label">表示名</label>
             <input
               className="form-input"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); setError(""); }}
               placeholder="例: 山田太郎"
+              autoFocus
             />
           </div>
+          <p style={{ fontSize: 12, color: "var(--color-text-muted)", marginBottom: 12 }}>
+            デモ環境: 管理者権限でログインします
+          </p>
           <button type="submit" className="btn btn-primary" style={{ width: "100%", justifyContent: "center", marginTop: 8 }}>
             ログイン
           </button>

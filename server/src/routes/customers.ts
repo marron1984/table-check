@@ -32,13 +32,13 @@ router.get("/search", authenticate, auditLog("customer"), async (req: Authentica
       where.OR = [
         { phoneNormalized: normalizedPhone || undefined },
         { phone: { contains: query } },
-        { email: { contains: query, mode: "insensitive" } },
+        { email: { contains: query } },
         { lastName: { contains: query } },
         { firstName: { contains: query } },
         { lastNameKana: { contains: query } },
         { firstNameKana: { contains: query } },
-        { lastNameEn: { contains: query, mode: "insensitive" } },
-        { firstNameEn: { contains: query, mode: "insensitive" } },
+        { lastNameEn: { contains: query } },
+        { firstNameEn: { contains: query } },
         { companyName: { contains: query } },
       ].filter((c) => {
         const values = Object.values(c);

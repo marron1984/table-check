@@ -1,47 +1,29 @@
--- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "public";
-
--- CreateEnum
-CREATE TYPE "ReservationStatus" AS ENUM ('CONFIRMED', 'SEATED', 'COMPLETED', 'CANCELLED', 'NO_SHOW');
-
--- CreateEnum
-CREATE TYPE "AlertSeverity" AS ENUM ('CRITICAL', 'HIGH', 'MEDIUM', 'LOW');
-
--- CreateEnum
-CREATE TYPE "DuplicateStatus" AS ENUM ('PENDING', 'MERGED', 'REJECTED');
-
--- CreateEnum
-CREATE TYPE "StaffRole" AS ENUM ('ADMIN', 'MANAGER', 'RESERVATION_STAFF', 'FLOOR_STAFF', 'ANALYST');
-
 -- CreateTable
 CREATE TABLE "franchises" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "tablecheck_id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "franchises_pkey" PRIMARY KEY ("id")
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL
 );
 
 -- CreateTable
 CREATE TABLE "shops" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "tablecheck_id" TEXT NOT NULL,
     "franchise_id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "timezone" TEXT NOT NULL DEFAULT 'Asia/Tokyo',
     "phone" TEXT,
     "address" TEXT,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "shops_pkey" PRIMARY KEY ("id")
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL,
+    CONSTRAINT "shops_franchise_id_fkey" FOREIGN KEY ("franchise_id") REFERENCES "franchises" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "customers" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "tablecheck_id" TEXT,
     "merged_into_id" TEXT,
     "last_name" TEXT,
@@ -67,40 +49,38 @@ CREATE TABLE "customers" (
     "referrer_name" TEXT,
     "concierge_name" TEXT,
     "concierge_source" TEXT,
-    "ltv_score" DOUBLE PRECISION,
-    "return_probability_90" DOUBLE PRECISION,
-    "return_probability_180" DOUBLE PRECISION,
-    "cancel_risk" DOUBLE PRECISION,
-    "profile_completeness" DOUBLE PRECISION,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-    "last_visit_at" TIMESTAMP(3),
-
-    CONSTRAINT "customers_pkey" PRIMARY KEY ("id")
+    "ltv_score" REAL,
+    "return_probability_90" REAL,
+    "return_probability_180" REAL,
+    "cancel_risk" REAL,
+    "profile_completeness" REAL,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL,
+    "last_visit_at" DATETIME,
+    CONSTRAINT "customers_merged_into_id_fkey" FOREIGN KEY ("merged_into_id") REFERENCES "customers" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "customer_history" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "customer_id" TEXT NOT NULL,
     "field" TEXT NOT NULL,
     "old_value" TEXT,
     "new_value" TEXT,
     "changed_by" TEXT,
-    "changed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "customer_history_pkey" PRIMARY KEY ("id")
+    "changed_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "customer_history_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "reservations" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "tablecheck_id" TEXT,
     "shop_id" TEXT NOT NULL,
     "customer_id" TEXT,
-    "date_time" TIMESTAMP(3) NOT NULL,
+    "date_time" DATETIME NOT NULL,
     "party_size" INTEGER NOT NULL,
-    "status" "ReservationStatus" NOT NULL DEFAULT 'CONFIRMED',
+    "status" TEXT NOT NULL DEFAULT 'CONFIRMED',
     "course_name" TEXT,
     "course_price" INTEGER,
     "total_amount" INTEGER,
@@ -109,18 +89,18 @@ CREATE TABLE "reservations" (
     "special_requests" TEXT,
     "internal_memo" TEXT,
     "companions" TEXT,
-    "cancelled_at" TIMESTAMP(3),
+    "cancelled_at" DATETIME,
     "cancel_reason" TEXT,
     "source" TEXT,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "reservations_pkey" PRIMARY KEY ("id")
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL,
+    CONSTRAINT "reservations_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "shops" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "reservations_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customers" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "tag_definitions" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "slug" TEXT NOT NULL,
     "label" TEXT NOT NULL,
     "label_ja" TEXT NOT NULL,
@@ -128,113 +108,103 @@ CREATE TABLE "tag_definitions" (
     "color" TEXT DEFAULT '#6B7280',
     "auto_rule" TEXT,
     "priority" INTEGER NOT NULL DEFAULT 0,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "tag_definitions_pkey" PRIMARY KEY ("id")
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL
 );
 
 -- CreateTable
 CREATE TABLE "customer_tags" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "customer_id" TEXT NOT NULL,
     "tag_definition_id" TEXT NOT NULL,
     "assigned_by" TEXT,
-    "assigned_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "expires_at" TIMESTAMP(3),
+    "assigned_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expires_at" DATETIME,
     "metadata" TEXT,
-
-    CONSTRAINT "customer_tags_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "customer_tags_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "customer_tags_tag_definition_id_fkey" FOREIGN KEY ("tag_definition_id") REFERENCES "tag_definitions" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "memberships" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "tablecheck_id" TEXT,
     "customer_id" TEXT NOT NULL,
     "tier" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'active',
-    "start_date" TIMESTAMP(3) NOT NULL,
-    "end_date" TIMESTAMP(3),
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "memberships_pkey" PRIMARY KEY ("id")
+    "start_date" DATETIME NOT NULL,
+    "end_date" DATETIME,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL,
+    CONSTRAINT "memberships_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "reservation_alerts" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "reservation_id" TEXT NOT NULL,
-    "severity" "AlertSeverity" NOT NULL,
+    "severity" TEXT NOT NULL,
     "alert_type" TEXT NOT NULL,
     "message" TEXT NOT NULL,
     "dismissed" BOOLEAN NOT NULL DEFAULT false,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "reservation_alerts_pkey" PRIMARY KEY ("id")
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "reservation_alerts_reservation_id_fkey" FOREIGN KEY ("reservation_id") REFERENCES "reservations" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "duplicate_candidates" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "primary_id" TEXT NOT NULL,
     "secondary_id" TEXT NOT NULL,
-    "confidence_score" DOUBLE PRECISION NOT NULL,
+    "confidence_score" REAL NOT NULL,
     "match_reasons" TEXT NOT NULL,
-    "status" "DuplicateStatus" NOT NULL DEFAULT 'PENDING',
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
     "resolved_by" TEXT,
-    "resolved_at" TIMESTAMP(3),
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "duplicate_candidates_pkey" PRIMARY KEY ("id")
+    "resolved_at" DATETIME,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "duplicate_candidates_primary_id_fkey" FOREIGN KEY ("primary_id") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "duplicate_candidates_secondary_id_fkey" FOREIGN KEY ("secondary_id") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "sync_states" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "object_type" TEXT NOT NULL,
-    "last_sync_at" TIMESTAMP(3),
+    "last_sync_at" DATETIME,
     "last_cursor" TEXT,
     "status" TEXT NOT NULL DEFAULT 'idle',
     "error_message" TEXT,
     "records_synced" INTEGER NOT NULL DEFAULT 0,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "sync_states_pkey" PRIMARY KEY ("id")
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL
 );
 
 -- CreateTable
 CREATE TABLE "sync_logs" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "object_type" TEXT NOT NULL,
     "object_id" TEXT NOT NULL,
     "action" TEXT NOT NULL,
     "source_payload" TEXT,
-    "applied_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "sync_logs_pkey" PRIMARY KEY ("id")
+    "applied_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable
 CREATE TABLE "staff" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "email" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "role" "StaffRole" NOT NULL DEFAULT 'FLOOR_STAFF',
+    "role" TEXT NOT NULL DEFAULT 'FLOOR_STAFF',
     "shop_ids" TEXT,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "password_hash" TEXT NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "staff_pkey" PRIMARY KEY ("id")
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL
 );
 
 -- CreateTable
 CREATE TABLE "audit_logs" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "staff_id" TEXT,
     "action" TEXT NOT NULL,
     "object_type" TEXT NOT NULL,
@@ -242,9 +212,8 @@ CREATE TABLE "audit_logs" (
     "customer_id" TEXT,
     "details" TEXT,
     "ip_address" TEXT,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id")
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "audit_logs_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customers" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateIndex
@@ -330,40 +299,3 @@ CREATE INDEX "audit_logs_customer_id_idx" ON "audit_logs"("customer_id");
 
 -- CreateIndex
 CREATE INDEX "audit_logs_created_at_idx" ON "audit_logs"("created_at");
-
--- AddForeignKey
-ALTER TABLE "shops" ADD CONSTRAINT "shops_franchise_id_fkey" FOREIGN KEY ("franchise_id") REFERENCES "franchises"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "customers" ADD CONSTRAINT "customers_merged_into_id_fkey" FOREIGN KEY ("merged_into_id") REFERENCES "customers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "customer_history" ADD CONSTRAINT "customer_history_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "reservations" ADD CONSTRAINT "reservations_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "shops"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "reservations" ADD CONSTRAINT "reservations_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "customer_tags" ADD CONSTRAINT "customer_tags_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "customer_tags" ADD CONSTRAINT "customer_tags_tag_definition_id_fkey" FOREIGN KEY ("tag_definition_id") REFERENCES "tag_definitions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "memberships" ADD CONSTRAINT "memberships_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "reservation_alerts" ADD CONSTRAINT "reservation_alerts_reservation_id_fkey" FOREIGN KEY ("reservation_id") REFERENCES "reservations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "duplicate_candidates" ADD CONSTRAINT "duplicate_candidates_primary_id_fkey" FOREIGN KEY ("primary_id") REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "duplicate_candidates" ADD CONSTRAINT "duplicate_candidates_secondary_id_fkey" FOREIGN KEY ("secondary_id") REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-

@@ -1,0 +1,18 @@
+{
+  "name": "tablecheck-crm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TableCheck CRM Subsystem - Customer intelligence layer on top of TableCheck",
+  "scripts": {
+    "dev:server": "cd server && npm run dev",
+    "dev:web": "cd web && npm run dev",
+    "build:server": "cd server && npm run build",
+    "build:web": "cd web && npm run build",
+    "build": "npm run build:server && npm run build:web",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit -p server/tsconfig.json && tsc --noEmit -p web/tsconfig.json"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

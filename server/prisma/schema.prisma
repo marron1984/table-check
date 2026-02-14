@@ -1,0 +1,369 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Shop / Franchise (店舗・拠点)
+// ============================================================
+
+model Franchise {
+  id              String   @id @default(uuid())
+  tableCheckId    String   @unique @map("tablecheck_id")
+  name            String
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  shops           Shop[]
+
+  @@map("franchises")
+}
+
+model Shop {
+  id              String   @id @default(uuid())
+  tableCheckId    String   @unique @map("tablecheck_id")
+  franchiseId     String   @map("franchise_id")
+  name            String
+  timezone        String   @default("Asia/Tokyo")
+  phone           String?
+  address         String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  franchise       Franchise     @relation(fields: [franchiseId], references: [id])
+  reservations    Reservation[]
+
+  @@map("shops")
+}
+
+// ============================================================
+// Customer (顧客)
+// ============================================================
+
+model Customer {
+  id                  String    @id @default(uuid())
+  tableCheckId        String?   @unique @map("tablecheck_id")
+  mergedIntoId        String?   @map("merged_into_id")
+
+  // 基本情報
+  lastName            String?   @map("last_name")
+  firstName           String?   @map("first_name")
+  lastNameKana        String?   @map("last_name_kana")
+  firstNameKana       String?   @map("first_name_kana")
+  lastNameEn          String?   @map("last_name_en")
+  firstNameEn         String?   @map("first_name_en")
+  email               String?
+  phone               String?
+  phoneNormalized     String?   @map("phone_normalized")
+  language            String?   @default("ja")
+  country             String?
+
+  // 嗜好・注意
+  allergies           String?   // JSON配列: [{name, severity}]
+  dietaryRestrictions String?   @map("dietary_restrictions")
+  preferences         String?   // JSON: 席, 温度, 量, 酒, 写真可否 etc.
+  internalNote        String?   @map("internal_note")
+
+  // 法人・紹介関連
+  companyName         String?   @map("company_name")
+  companyRole         String?   @map("company_role")
+  secretaryName       String?   @map("secretary_name")
+  secretaryPhone      String?   @map("secretary_phone")
+  secretaryEmail      String?   @map("secretary_email")
+  referrerName        String?   @map("referrer_name")
+  conciergeName       String?   @map("concierge_name")
+  conciergeSource     String?   @map("concierge_source") // ホテル名, 旅行会社名 etc.
+
+  // スコア
+  ltvScore            Float?    @map("ltv_score")
+  returnProbability90 Float?    @map("return_probability_90")
+  returnProbability180 Float?   @map("return_probability_180")
+  cancelRisk          Float?    @map("cancel_risk")
+
+  // メタ
+  profileCompleteness Float?    @map("profile_completeness")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  lastVisitAt         DateTime? @map("last_visit_at")
+
+  // Relations
+  mergedInto          Customer?        @relation("CustomerMerge", fields: [mergedIntoId], references: [id])
+  mergedFrom          Customer[]       @relation("CustomerMerge")
+  reservations        Reservation[]
+  tags                CustomerTag[]
+  memberships         Membership[]
+  history             CustomerHistory[]
+  auditLogs           AuditLog[]
+  duplicatePrimary    DuplicateCandidate[] @relation("DuplicatePrimary")
+  duplicateSecondary  DuplicateCandidate[] @relation("DuplicateSecondary")
+
+  @@index([phoneNormalized])
+  @@index([email])
+  @@index([lastName, firstName])
+  @@index([lastNameKana, firstNameKana])
+  @@index([mergedIntoId])
+  @@map("customers")
+}
+
+model CustomerHistory {
+  id          String   @id @default(uuid())
+  customerId  String   @map("customer_id")
+  field       String
+  oldValue    String?  @map("old_value")
+  newValue    String?  @map("new_value")
+  changedBy   String?  @map("changed_by")
+  changedAt   DateTime @default(now()) @map("changed_at")
+
+  customer    Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId, changedAt])
+  @@map("customer_history")
+}
+
+// ============================================================
+// Reservation (予約)
+// ============================================================
+
+enum ReservationStatus {
+  CONFIRMED
+  SEATED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model Reservation {
+  id                String            @id @default(uuid())
+  tableCheckId      String?           @unique @map("tablecheck_id")
+  shopId            String            @map("shop_id")
+  customerId        String?           @map("customer_id")
+
+  // 予約内容
+  dateTime          DateTime          @map("date_time")
+  partySize         Int               @map("party_size")
+  status            ReservationStatus @default(CONFIRMED)
+  courseName        String?           @map("course_name")
+  coursePrice        Int?              @map("course_price")
+  totalAmount       Int?              @map("total_amount")
+  tableLabel        String?           @map("table_label")
+
+  // 運用メモ
+  occasion          String?           // 接待, 記念日, デート, 会食 etc.
+  specialRequests   String?           @map("special_requests")
+  internalMemo      String?           @map("internal_memo")
+
+  // 同伴者
+  companions        String?           // JSON: [{name, relation}]
+
+  // キャンセル関連
+  cancelledAt       DateTime?         @map("cancelled_at")
+  cancelReason      String?           @map("cancel_reason")
+
+  // メタ
+  source            String?           // tablecheck, phone, walk-in, concierge
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  shop              Shop              @relation(fields: [shopId], references: [id])
+  customer          Customer?         @relation(fields: [customerId], references: [id])
+  alerts            ReservationAlert[]
+
+  @@index([shopId, dateTime])
+  @@index([customerId])
+  @@index([status])
+  @@index([dateTime])
+  @@map("reservations")
+}
+
+// ============================================================
+// Tags & Scoring
+// ============================================================
+
+model TagDefinition {
+  id          String        @id @default(uuid())
+  slug        String        @unique
+  label       String
+  labelJa     String        @map("label_ja")
+  category    String        // engagement, risk, preference, attribute
+  color       String?       @default("#6B7280")
+  autoRule    String?       @map("auto_rule") // JSON: 自動付与ルール定義
+  priority    Int           @default(0)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  customerTags CustomerTag[]
+
+  @@map("tag_definitions")
+}
+
+model CustomerTag {
+  id              String   @id @default(uuid())
+  customerId      String   @map("customer_id")
+  tagDefinitionId String   @map("tag_definition_id")
+  assignedBy      String?  @map("assigned_by") // "auto" or user ID
+  assignedAt      DateTime @default(now()) @map("assigned_at")
+  expiresAt       DateTime? @map("expires_at")
+  metadata        String?  // JSON: スコア根拠など
+
+  customer        Customer      @relation(fields: [customerId], references: [id])
+  tagDefinition   TagDefinition @relation(fields: [tagDefinitionId], references: [id])
+
+  @@unique([customerId, tagDefinitionId])
+  @@map("customer_tags")
+}
+
+// ============================================================
+// Membership (会員)
+// ============================================================
+
+model Membership {
+  id              String   @id @default(uuid())
+  tableCheckId    String?  @unique @map("tablecheck_id")
+  customerId      String   @map("customer_id")
+  tier            String   // bronze, silver, gold, platinum, etc.
+  status          String   @default("active")
+  startDate       DateTime @map("start_date")
+  endDate         DateTime? @map("end_date")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  customer        Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@map("memberships")
+}
+
+// ============================================================
+// Alerts (現場アラート)
+// ============================================================
+
+enum AlertSeverity {
+  CRITICAL  // 重大アレルギー
+  HIGH      // VIP, ノーショー注意
+  MEDIUM    // 記念日
+  LOW       // 情報
+}
+
+model ReservationAlert {
+  id              String        @id @default(uuid())
+  reservationId   String        @map("reservation_id")
+  severity        AlertSeverity
+  alertType       String        @map("alert_type") // allergy, vip, no_show_risk, anniversary, etc.
+  message         String
+  dismissed       Boolean       @default(false)
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  reservation     Reservation   @relation(fields: [reservationId], references: [id])
+
+  @@index([reservationId])
+  @@map("reservation_alerts")
+}
+
+// ============================================================
+// Duplicate Candidates (重複候補キュー)
+// ============================================================
+
+enum DuplicateStatus {
+  PENDING
+  MERGED
+  REJECTED
+}
+
+model DuplicateCandidate {
+  id              String          @id @default(uuid())
+  primaryId       String          @map("primary_id")
+  secondaryId     String          @map("secondary_id")
+  confidenceScore Float           @map("confidence_score")
+  matchReasons    String          @map("match_reasons") // JSON: ["phone", "email", "name_kana"]
+  status          DuplicateStatus @default(PENDING)
+  resolvedBy      String?         @map("resolved_by")
+  resolvedAt      DateTime?       @map("resolved_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  primary         Customer        @relation("DuplicatePrimary", fields: [primaryId], references: [id])
+  secondary       Customer        @relation("DuplicateSecondary", fields: [secondaryId], references: [id])
+
+  @@unique([primaryId, secondaryId])
+  @@index([status])
+  @@map("duplicate_candidates")
+}
+
+// ============================================================
+// Sync State (同期管理)
+// ============================================================
+
+model SyncState {
+  id              String   @id @default(uuid())
+  objectType      String   @map("object_type") // customer, reservation, membership
+  lastSyncAt      DateTime? @map("last_sync_at")
+  lastCursor      String?  @map("last_cursor")
+  status          String   @default("idle") // idle, running, error
+  errorMessage    String?  @map("error_message")
+  recordsSynced   Int      @default(0) @map("records_synced")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([objectType])
+  @@map("sync_states")
+}
+
+model SyncLog {
+  id              String   @id @default(uuid())
+  objectType      String   @map("object_type")
+  objectId        String   @map("object_id")
+  action          String   // create, update, delete
+  sourcePayload   String?  @map("source_payload") // JSON
+  appliedAt       DateTime @default(now()) @map("applied_at")
+
+  @@index([objectType, appliedAt])
+  @@index([objectId])
+  @@map("sync_logs")
+}
+
+// ============================================================
+// RBAC & Audit
+// ============================================================
+
+enum StaffRole {
+  ADMIN
+  MANAGER
+  RESERVATION_STAFF
+  FLOOR_STAFF
+  ANALYST
+}
+
+model Staff {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  name        String
+  role        StaffRole @default(FLOOR_STAFF)
+  shopIds     String?   @map("shop_ids") // JSON: アクセス可能な店舗ID配列
+  isActive    Boolean   @default(true) @map("is_active")
+  passwordHash String   @map("password_hash")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("staff")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  staffId     String?  @map("staff_id")
+  action      String   // view, edit, merge, export, search
+  objectType  String   @map("object_type")
+  objectId    String?  @map("object_id")
+  customerId  String?  @map("customer_id")
+  details     String?  // JSON
+  ipAddress   String?  @map("ip_address")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  customer    Customer? @relation(fields: [customerId], references: [id])
+
+  @@index([staffId, createdAt])
+  @@index([customerId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

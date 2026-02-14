@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { config } from "./config";
@@ -32,10 +32,11 @@ app.use("/api/sync", syncRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
 // Error handler
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   logger.error("Unhandled error", { error: err.message, stack: err.stack });
   res.status(500).json({ error: "内部エラーが発生しました" });
-});
+};
+app.use(errorHandler);
 
 async function start() {
   try {

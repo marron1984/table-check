@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { prisma } from "../db";
 import { authenticate, type AuthenticatedRequest } from "../middleware/auth";
 import { auditLog } from "../middleware/audit";
@@ -9,7 +9,7 @@ const router = Router();
  * GET /api/reservations/today
  * 当日予約一覧（アラート付き）
  */
-router.get("/today", authenticate, auditLog("reservation"), async (req: AuthenticatedRequest, res) => {
+router.get("/today", authenticate, auditLog("reservation"), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { shopId } = req.query;
     const today = new Date();
@@ -52,7 +52,7 @@ router.get("/today", authenticate, auditLog("reservation"), async (req: Authenti
  * GET /api/reservations/:id
  * 予約詳細
  */
-router.get("/:id", authenticate, auditLog("reservation"), async (req: AuthenticatedRequest, res) => {
+router.get("/:id", authenticate, auditLog("reservation"), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const reservation = await prisma.reservation.findUnique({
       where: { id: req.params.id },
@@ -101,7 +101,7 @@ router.get("/:id", authenticate, auditLog("reservation"), async (req: Authentica
  * GET /api/reservations
  * 予約検索（日付範囲, 店舗, ステータス）
  */
-router.get("/", authenticate, async (req: AuthenticatedRequest, res) => {
+router.get("/", authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { shopId, from, to, status, page = "1", limit = "50" } = req.query;
 

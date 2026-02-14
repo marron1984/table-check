@@ -1,6 +1,7 @@
-import { Router, Request, Response } from "express";
+import { Router, type Request, type Response } from "express";
 import crypto from "crypto";
 import { config } from "../config";
+import { logger } from "../logger";
 import { prisma } from "../db";
 import { handleSyncEvent } from "../sync";
 import { backfillCustomers, backfillReservations, syncShops } from "../sync";
@@ -46,7 +47,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
  * POST /api/sync/backfill
  * 手動バックフィル実行（管理者のみ）
  */
-router.post("/backfill", authenticate, requireRole("ADMIN"), async (_req: AuthenticatedRequest, res) => {
+router.post("/backfill", authenticate, requireRole("ADMIN"), async (_req: AuthenticatedRequest, res: Response) => {
   try {
     // 非同期で実行開始
     res.json({ message: "バックフィルを開始しました" });
@@ -55,7 +56,7 @@ router.post("/backfill", authenticate, requireRole("ADMIN"), async (_req: Authen
     await backfillCustomers();
     await backfillReservations();
   } catch (error) {
-    // すでにレスポンス済みなのでログのみ
+    logger.error("Backfill failed", { error: (error as Error).message });
   }
 });
 
@@ -63,7 +64,7 @@ router.post("/backfill", authenticate, requireRole("ADMIN"), async (_req: Authen
  * GET /api/sync/status
  * 同期ステータス確認
  */
-router.get("/status", authenticate, async (_req, res) => {
+router.get("/status", authenticate, async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const states = await prisma.syncState.findMany();
     res.json({ data: states });

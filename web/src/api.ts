@@ -123,6 +123,7 @@ export interface Customer {
 }
 
 export interface CustomerDetail extends Customer {
+  companyRole: string | null;
   allergies: string | null;
   dietaryRestrictions: string | null;
   preferences: string | null;

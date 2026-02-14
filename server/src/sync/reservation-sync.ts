@@ -2,6 +2,7 @@ import { ReservationStatus } from "@prisma/client";
 import { prisma } from "../db";
 import { logger } from "../logger";
 import { tableCheckClient, type TCReservation } from "../tablecheck";
+import { generateReservationAlerts } from "../services/alerts";
 
 function mapStatus(tcStatus: string): ReservationStatus {
   const mapping: Record<string, ReservationStatus> = {
@@ -68,6 +69,15 @@ export async function upsertReservation(tc: TCReservation): Promise<string> {
       sourcePayload: JSON.stringify(tc),
     },
   });
+
+  // 後処理: アラート生成
+  try {
+    await generateReservationAlerts(result.id);
+  } catch (error) {
+    logger.warn(`Alert generation failed for reservation ${result.id}`, {
+      error: (error as Error).message,
+    });
+  }
 
   return result.id;
 }

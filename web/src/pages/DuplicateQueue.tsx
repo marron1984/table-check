@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { fetchDuplicates, mergeDuplicate, rejectDuplicate } from "../api";
+import { fetchDuplicates, mergeDuplicate, rejectDuplicate, type Customer } from "../api";
 import { TagBadge } from "../components/TagBadge";
 
 export function DuplicateQueue() {
@@ -43,7 +43,7 @@ export function DuplicateQueue() {
           <div style={{ padding: "8px 16px", fontSize: 12, color: "var(--color-text-muted)", borderBottom: "1px solid var(--color-border)" }}>
             確信度: <strong>{Math.round(dup.confidenceScore * 100)}%</strong>
             {" | "}
-            一致項目: {JSON.parse(dup.matchReasons).join(", ")}
+            一致項目: {(() => { try { return JSON.parse(dup.matchReasons).join(", "); } catch { return dup.matchReasons; } })()}
           </div>
 
           <div className="duplicate-pair">
@@ -82,7 +82,7 @@ export function DuplicateQueue() {
   );
 }
 
-function CustomerCard({ customer, label }: { customer: { id: string; lastName: string | null; firstName: string | null; phone: string | null; email: string | null; tags: Array<{ id: string; tagDefinition: { slug: string; label: string; labelJa: string; color: string | null; priority: number; id: string; category: string } }> }; label: string }) {
+function CustomerCard({ customer, label }: { customer: Customer; label: string }) {
   return (
     <div>
       <div style={{ fontSize: 11, color: "var(--color-text-muted)", marginBottom: 4 }}>{label}</div>

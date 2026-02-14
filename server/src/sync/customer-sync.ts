@@ -2,6 +2,9 @@ import { prisma } from "../db";
 import { logger } from "../logger";
 import { tableCheckClient, type TCCustomer } from "../tablecheck";
 import { normalizePhone, normalizeName, normalizeEmail, calcProfileCompleteness } from "../utils";
+import { detectDuplicates } from "../services/customer-merge";
+import { evaluateCustomerTags } from "../services/tagging";
+import { recalculateScores } from "../services/scoring";
 
 /**
  * TCCustomer → Prisma Upsert用データに変換
@@ -69,6 +72,17 @@ export async function upsertCustomer(tc: TCCustomer): Promise<string> {
       sourcePayload: JSON.stringify(tc),
     },
   });
+
+  // 後処理: タグ評価、スコア再計算、重複検出
+  try {
+    await evaluateCustomerTags(result.id);
+    await recalculateScores(result.id);
+    await detectDuplicates(result.id);
+  } catch (error) {
+    logger.warn(`Post-sync processing failed for customer ${result.id}`, {
+      error: (error as Error).message,
+    });
+  }
 
   return result.id;
 }

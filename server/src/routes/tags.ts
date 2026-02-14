@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { prisma } from "../db";
 import { authenticate, requireRole, type AuthenticatedRequest } from "../middleware/auth";
 import { auditLog } from "../middleware/audit";
@@ -9,7 +9,7 @@ const router = Router();
  * GET /api/tags
  * タグ一覧
  */
-router.get("/", authenticate, async (_req, res) => {
+router.get("/", authenticate, async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const tags = await prisma.tagDefinition.findMany({
       orderBy: [{ category: "asc" }, { priority: "desc" }],
@@ -32,7 +32,7 @@ router.post(
   authenticate,
   requireRole("ADMIN", "MANAGER", "RESERVATION_STAFF"),
   auditLog("tag"),
-  async (req: AuthenticatedRequest, res) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const tag = await prisma.customerTag.upsert({
         where: {
@@ -66,7 +66,7 @@ router.delete(
   authenticate,
   requireRole("ADMIN", "MANAGER"),
   auditLog("tag"),
-  async (_req, res) => {
+  async (_req: AuthenticatedRequest, res: Response) => {
     try {
       await prisma.customerTag.delete({
         where: {

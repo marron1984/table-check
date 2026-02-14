@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { prisma } from "../db";
 import { authenticate, type AuthenticatedRequest } from "../middleware/auth";
 
@@ -8,7 +8,7 @@ const router = Router();
  * GET /api/dashboard/stats
  * ダッシュボード統計
  */
-router.get("/stats", authenticate, async (req: AuthenticatedRequest, res) => {
+router.get("/stats", authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { prisma } from "../db";
 import { authenticate, requireRole, type AuthenticatedRequest } from "../middleware/auth";
 import { auditLog } from "../middleware/audit";
@@ -13,7 +13,7 @@ const router = Router();
  * 顧客検索（電話・名前・タグ）
  * 要件: 3秒以内にヒット
  */
-router.get("/search", authenticate, auditLog("customer"), async (req: AuthenticatedRequest, res) => {
+router.get("/search", authenticate, auditLog("customer"), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { q, tag, page = "1", limit = "20" } = req.query;
     const query = (q as string)?.trim();
@@ -91,7 +91,7 @@ router.get("/search", authenticate, auditLog("customer"), async (req: Authentica
  * GET /api/customers/:id
  * 顧客詳細（タイムライン＋嗜好＋注意）
  */
-router.get("/:id", authenticate, auditLog("customer"), async (req: AuthenticatedRequest, res) => {
+router.get("/:id", authenticate, auditLog("customer"), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const customer = await prisma.customer.findUnique({
       where: { id: req.params.id },
@@ -156,7 +156,7 @@ router.get("/:id", authenticate, auditLog("customer"), async (req: Authenticated
  * PATCH /api/customers/:id
  * 顧客情報の更新（嗜好・メモ等）
  */
-router.patch("/:id", authenticate, requireRole("ADMIN", "MANAGER", "RESERVATION_STAFF"), auditLog("customer"), async (req: AuthenticatedRequest, res) => {
+router.patch("/:id", authenticate, requireRole("ADMIN", "MANAGER", "RESERVATION_STAFF"), auditLog("customer"), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const allowedFields = [
       "allergies", "dietaryRestrictions", "preferences", "internalNote",
@@ -213,7 +213,7 @@ router.patch("/:id", authenticate, requireRole("ADMIN", "MANAGER", "RESERVATION_
  * GET /api/customers/duplicates
  * 重複統合キュー（管理者のみ）
  */
-router.get("/duplicates/queue", authenticate, requireRole("ADMIN", "MANAGER"), async (req: AuthenticatedRequest, res) => {
+router.get("/duplicates/queue", authenticate, requireRole("ADMIN", "MANAGER"), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { page = "1", limit = "20" } = req.query;
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
@@ -255,7 +255,7 @@ router.get("/duplicates/queue", authenticate, requireRole("ADMIN", "MANAGER"), a
  * POST /api/customers/duplicates/:id/merge
  * 手動マージ実行
  */
-router.post("/duplicates/:id/merge", authenticate, requireRole("ADMIN", "MANAGER"), auditLog("customer"), async (req: AuthenticatedRequest, res) => {
+router.post("/duplicates/:id/merge", authenticate, requireRole("ADMIN", "MANAGER"), auditLog("customer"), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const duplicate = await prisma.duplicateCandidate.findUnique({
       where: { id: req.params.id },
@@ -277,7 +277,7 @@ router.post("/duplicates/:id/merge", authenticate, requireRole("ADMIN", "MANAGER
  * POST /api/customers/duplicates/:id/reject
  * 重複候補を却下
  */
-router.post("/duplicates/:id/reject", authenticate, requireRole("ADMIN", "MANAGER"), auditLog("customer"), async (req: AuthenticatedRequest, res) => {
+router.post("/duplicates/:id/reject", authenticate, requireRole("ADMIN", "MANAGER"), auditLog("customer"), async (req: AuthenticatedRequest, res: Response) => {
   try {
     await rejectDuplicate(req.params.id, req.staff!.id);
     res.json({ success: true, message: "重複候補を却下しました" });

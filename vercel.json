@@ -3,8 +3,12 @@
   "buildCommand": "cd web && npm run build",
   "outputDirectory": "web/dist",
   "framework": "vite",
+  "build": {
+    "env": {
+      "VITE_DEMO_MODE": "true"
+    }
+  },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

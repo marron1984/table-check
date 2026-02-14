@@ -1,4 +1,13 @@
-const API_BASE = "/api";
+import * as mockApi from "./mock/api";
+
+// ============================================================
+// Demo mode detection
+// デモモード: VITE_DEMO_MODE=true or API_BASE未設定（Vercel静的デプロイ）
+// ============================================================
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true"
+  || typeof window !== "undefined" && !import.meta.env.VITE_API_URL && window.location.hostname !== "localhost";
+
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 // MVP: スタッフIDはローカルストレージから取得
 function getHeaders(): Record<string, string> {
@@ -33,16 +42,19 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 // --- Reservations ---
 export function fetchTodayReservations(shopId?: string) {
+  if (DEMO_MODE) return mockApi.fetchTodayReservations(shopId);
   const params = shopId ? `?shopId=${shopId}` : "";
   return request<{ data: Reservation[]; count: number }>(`/reservations/today${params}`);
 }
 
 export function fetchReservation(id: string) {
+  if (DEMO_MODE) return mockApi.fetchReservation(id);
   return request<{ data: ReservationDetail }>(`/reservations/${id}`);
 }
 
 // --- Customers ---
 export function searchCustomers(q: string, tag?: string, page = 1) {
+  if (DEMO_MODE) return mockApi.searchCustomers(q, tag, page);
   const params = new URLSearchParams();
   if (q) params.set("q", q);
   if (tag) params.set("tag", tag);
@@ -51,10 +63,12 @@ export function searchCustomers(q: string, tag?: string, page = 1) {
 }
 
 export function fetchCustomer(id: string) {
+  if (DEMO_MODE) return mockApi.fetchCustomer(id);
   return request<{ data: CustomerDetail; mergedInto?: string }>(`/customers/${id}`);
 }
 
 export function updateCustomer(id: string, data: Record<string, unknown>) {
+  if (DEMO_MODE) return mockApi.updateCustomer(id, data);
   return request<{ data: Customer }>(`/customers/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
@@ -63,48 +77,58 @@ export function updateCustomer(id: string, data: Record<string, unknown>) {
 
 // --- Duplicates ---
 export function fetchDuplicates(page = 1) {
+  if (DEMO_MODE) return mockApi.fetchDuplicates(page);
   return request<{ data: DuplicateCandidate[]; pagination: Pagination }>(
     `/customers/duplicates/queue?page=${page}`
   );
 }
 
 export function mergeDuplicate(id: string) {
+  if (DEMO_MODE) return mockApi.mergeDuplicate(id);
   return request<{ success: boolean }>(`/customers/duplicates/${id}/merge`, { method: "POST" });
 }
 
 export function rejectDuplicate(id: string) {
+  if (DEMO_MODE) return mockApi.rejectDuplicate(id);
   return request<{ success: boolean }>(`/customers/duplicates/${id}/reject`, { method: "POST" });
 }
 
 // --- Tags ---
 export function fetchTags() {
+  if (DEMO_MODE) return mockApi.fetchTags();
   return request<{ data: TagDefinition[] }>("/tags");
 }
 
 export function assignTag(tagId: string, customerId: string) {
+  if (DEMO_MODE) return mockApi.assignTag(tagId, customerId);
   return request<{ data: unknown }>(`/tags/${tagId}/customers/${customerId}`, { method: "POST" });
 }
 
 export function removeTag(tagId: string, customerId: string) {
+  if (DEMO_MODE) return mockApi.removeTag(tagId, customerId);
   return request<{ success: boolean }>(`/tags/${tagId}/customers/${customerId}`, { method: "DELETE" });
 }
 
 // --- Dashboard ---
 export function fetchDashboardStats() {
+  if (DEMO_MODE) return mockApi.fetchDashboardStats();
   return request<{ data: DashboardStats }>("/dashboard/stats");
 }
 
 // --- Sync ---
 export function fetchSyncStatus() {
+  if (DEMO_MODE) return mockApi.fetchSyncStatus();
   return request<{ data: SyncState[] }>("/sync/status");
 }
 
 export function triggerBackfill() {
+  if (DEMO_MODE) return mockApi.triggerBackfill();
   return request<{ message: string }>("/sync/backfill", { method: "POST" });
 }
 
 // --- Export ---
 export function exportCustomersCSV(q: string, tag?: string) {
+  if (DEMO_MODE) return mockApi.exportCustomersCSV(q, tag);
   const params = new URLSearchParams();
   if (q) params.set("q", q);
   if (tag) params.set("tag", tag);

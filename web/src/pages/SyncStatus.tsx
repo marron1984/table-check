@@ -54,28 +54,26 @@ export function SyncStatus() {
               <tr>
                 <th>エンティティ</th>
                 <th>ステータス</th>
+                <th>同期件数</th>
                 <th>最終同期</th>
-                <th>カーソル</th>
                 <th>エラー</th>
               </tr>
             </thead>
             <tbody>
               {data.data.map((s: SyncState) => (
                 <tr key={s.id}>
-                  <td style={{ fontWeight: 600 }}>{entityLabel(s.entityType)}</td>
+                  <td style={{ fontWeight: 600 }}>{entityLabel(s.objectType)}</td>
                   <td>
                     <span className={`sync-status sync-status-${s.status.toLowerCase()}`}>
                       {statusLabel(s.status)}
                     </span>
                   </td>
+                  <td style={{ fontSize: 13 }}>{s.recordsSynced.toLocaleString()}件</td>
                   <td style={{ fontSize: 13 }}>
                     {s.lastSyncAt ? format(new Date(s.lastSyncAt), "yyyy/MM/dd HH:mm:ss") : "--"}
                   </td>
-                  <td style={{ fontSize: 12, fontFamily: "monospace", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {s.cursor || "--"}
-                  </td>
-                  <td style={{ fontSize: 13, color: s.lastError ? "var(--color-danger)" : "var(--color-text-muted)" }}>
-                    {s.lastError || "--"}
+                  <td style={{ fontSize: 13, color: s.errorMessage ? "var(--color-danger)" : "var(--color-text-muted)" }}>
+                    {s.errorMessage || "--"}
                   </td>
                 </tr>
               ))}
@@ -89,11 +87,12 @@ export function SyncStatus() {
 
 interface SyncState {
   id: string;
-  entityType: string;
+  objectType: string;
   status: string;
   lastSyncAt: string | null;
-  cursor: string | null;
-  lastError: string | null;
+  lastCursor: string | null;
+  errorMessage: string | null;
+  recordsSynced: number;
 }
 
 function entityLabel(type: string): string {
@@ -107,10 +106,10 @@ function entityLabel(type: string): string {
 
 function statusLabel(status: string): string {
   const labels: Record<string, string> = {
-    IDLE: "待機中",
-    RUNNING: "実行中",
-    COMPLETED: "完了",
-    FAILED: "エラー",
+    idle: "待機中",
+    running: "実行中",
+    completed: "完了",
+    error: "エラー",
   };
   return labels[status] || status;
 }

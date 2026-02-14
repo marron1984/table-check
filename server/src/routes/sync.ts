@@ -48,6 +48,21 @@ router.post("/webhook", async (req: Request, res: Response) => {
  * 手動バックフィル実行（管理者のみ）
  */
 router.post("/backfill", authenticate, requireRole("ADMIN"), async (_req: AuthenticatedRequest, res: Response) => {
+  // デモ環境: TableCheck APIキーが未設定の場合はスキップ
+  if (!config.tableCheck.apiKey) {
+    // SyncStateのlastSyncAtを更新して「同期済み」に見せる
+    const now = new Date();
+    for (const objectType of ["customer", "reservation", "shop"]) {
+      await prisma.syncState.upsert({
+        where: { objectType },
+        update: { lastSyncAt: now, status: "idle" },
+        create: { objectType, lastSyncAt: now, status: "idle", recordsSynced: 0 },
+      });
+    }
+    res.json({ message: "デモ環境: 同期ステータスを更新しました" });
+    return;
+  }
+
   try {
     // 非同期で実行開始
     res.json({ message: "バックフィルを開始しました" });

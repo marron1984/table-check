@@ -233,9 +233,10 @@ export interface DashboardStats {
 
 export interface SyncState {
   id: string;
-  entityType: string;
+  objectType: string;
   status: string;
   lastSyncAt: string | null;
-  cursor: string | null;
-  lastError: string | null;
+  lastCursor: string | null;
+  errorMessage: string | null;
+  recordsSynced: number;
 }

@@ -6,9 +6,10 @@ const navItems = [
   { to: "/customers", label: "顧客検索" },
   { to: "/duplicates", label: "重複統合" },
   { to: "/tags", label: "タグ管理" },
+  { to: "/sync", label: "同期状態" },
 ];
 
-export function Layout() {
+export function Layout({ staffName, onLogout }: { staffName: string; onLogout: () => void }) {
   return (
     <div className="app-layout">
       <aside className="sidebar">
@@ -26,6 +27,10 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
+        <div className="sidebar-footer">
+          <div className="sidebar-user">{staffName}</div>
+          <button className="sidebar-logout" onClick={onLogout}>ログアウト</button>
+        </div>
       </aside>
       <main className="main-content">
         <Outlet />

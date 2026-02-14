@@ -86,6 +86,25 @@ export function fetchDashboardStats() {
   return request<{ data: DashboardStats }>("/dashboard/stats");
 }
 
+// --- Sync ---
+export function fetchSyncStatus() {
+  return request<{ data: SyncState[] }>("/sync/status");
+}
+
+export function triggerBackfill() {
+  return request<{ message: string }>("/sync/backfill", { method: "POST" });
+}
+
+// --- Export ---
+export function exportCustomersCSV(q: string, tag?: string) {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (tag) params.set("tag", tag);
+  params.set("format", "csv");
+  params.set("limit", "10000");
+  return request<{ data: Customer[]; pagination: Pagination }>(`/customers/search?${params}`);
+}
+
 // --- Types ---
 export interface Reservation {
   id: string;
@@ -202,4 +221,13 @@ export interface DashboardStats {
   vipCount: number;
   avgProfileCompleteness: number;
   duplicateRate: number;
+}
+
+export interface SyncState {
+  id: string;
+  entityType: string;
+  status: string;
+  lastSyncAt: string | null;
+  cursor: string | null;
+  lastError: string | null;
 }

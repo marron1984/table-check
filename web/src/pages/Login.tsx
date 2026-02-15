@@ -15,7 +15,7 @@ export function Login({ onLogin }: { onLogin: (staffId: string, name: string) =>
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1>TableCheck CRM</h1>
+          <h1 style={{ fontSize: 22 }}>dhpGカスタマーブック</h1>
           <p>スタッフログイン</p>
         </div>
         <form onSubmit={handleSubmit}>

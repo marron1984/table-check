@@ -20,7 +20,7 @@ export function Layout({ staffName, onLogout }: { staffName: string; onLogout: (
     if (location.pathname === "/duplicates") return "重複統合";
     if (location.pathname === "/tags") return "タグ管理";
     if (location.pathname === "/sync") return "同期状態";
-    return "TableCheck";
+    return "dhpGカスタマーブック";
   })();
 
   return (

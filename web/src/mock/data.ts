@@ -119,9 +119,11 @@ const SOURCES = ["tablecheck", "concierge", "phone"];
 // Shops
 // ============================================================
 export const shops = [
-  { id: uuid(9001), name: "鮨 銀座 本店" },
-  { id: uuid(9002), name: "フレンチ 六本木 ヒルズ" },
-  { id: uuid(9003), name: "懐石 青山" },
+  { id: uuid(9001), name: "鹿野屋 北新地本店" },
+  { id: uuid(9002), name: "鹿野屋 石垣島" },
+  { id: uuid(9003), name: "鹿野屋 淡路島" },
+  { id: uuid(9004), name: "鹿野屋 鳥取" },
+  { id: uuid(9005), name: "鹿野屋 心斎橋" },
 ];
 
 // ============================================================
@@ -536,7 +538,7 @@ const now = new Date().toISOString();
 export const syncStates: SyncState[] = [
   { id: uuid(7001), objectType: "customer", status: "idle", lastSyncAt: now, lastCursor: null, errorMessage: null, recordsSynced: 100 },
   { id: uuid(7002), objectType: "reservation", status: "idle", lastSyncAt: now, lastCursor: null, errorMessage: null, recordsSynced: allReservations.length },
-  { id: uuid(7003), objectType: "shop", status: "idle", lastSyncAt: now, lastCursor: null, errorMessage: null, recordsSynced: 3 },
+  { id: uuid(7003), objectType: "shop", status: "idle", lastSyncAt: now, lastCursor: null, errorMessage: null, recordsSynced: 5 },
 ];
 
 // ============================================================

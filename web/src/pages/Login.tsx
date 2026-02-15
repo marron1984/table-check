@@ -15,7 +15,10 @@ export function Login({ onLogin }: { onLogin: (staffId: string, name: string) =>
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1 style={{ fontSize: 22 }}>dhpGカスタマーブック</h1>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#7c3aed", letterSpacing: 1.5, marginBottom: 4 }}>
+            dhpG MARKETING OS
+          </div>
+          <h1 style={{ fontSize: 20 }}>カスタマーブック</h1>
           <p>スタッフログイン</p>
         </div>
         <form onSubmit={handleSubmit}>

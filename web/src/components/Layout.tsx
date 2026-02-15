@@ -1,11 +1,11 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 
 const navItems = [
-  { to: "/reservations/today", label: "予約", icon: "📋" },
-  { to: "/customers", label: "顧客", icon: "👤" },
-  { to: "/duplicates", label: "重複", icon: "🔀" },
-  { to: "/tags", label: "タグ", icon: "🏷" },
-  { to: "/sync", label: "同期", icon: "🔄" },
+  { to: "/", label: "OS", icon: "🏠", exact: true },
+  { to: "/reservations/today", label: "予約", icon: "📋", exact: false },
+  { to: "/customers", label: "顧客", icon: "👤", exact: false },
+  { to: "/analytics", label: "計量", icon: "📈", exact: false },
+  { to: "/settings", label: "管理", icon: "⚙", exact: false },
 ];
 
 export function Layout({ staffName, onLogout }: { staffName: string; onLogout: () => void }) {
@@ -13,14 +13,17 @@ export function Layout({ staffName, onLogout }: { staffName: string; onLogout: (
 
   // ページタイトル
   const pageTitle = (() => {
+    if (location.pathname === "/") return "dhpGマーケティングOS";
     if (location.pathname.startsWith("/reservations/today")) return "当日予約";
     if (location.pathname.startsWith("/reservations/")) return "予約詳細";
     if (location.pathname.startsWith("/customers/") && location.pathname !== "/customers") return "顧客詳細";
     if (location.pathname === "/customers") return "顧客検索";
+    if (location.pathname === "/analytics") return "ミクロ計量分析";
     if (location.pathname === "/duplicates") return "重複統合";
     if (location.pathname === "/tags") return "タグ管理";
     if (location.pathname === "/sync") return "同期状態";
-    return "dhpGカスタマーブック";
+    if (location.pathname === "/settings") return "管理";
+    return "dhpGマーケティングOS";
   })();
 
   return (
@@ -44,6 +47,7 @@ export function Layout({ staffName, onLogout }: { staffName: string; onLogout: (
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.exact}
             className={({ isActive }) =>
               `bottom-nav-item${isActive ? " active" : ""}`
             }

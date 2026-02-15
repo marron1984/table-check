@@ -109,6 +109,12 @@ export function removeTag(tagId: string, customerId: string) {
   return request<{ success: boolean }>(`/tags/${tagId}/customers/${customerId}`, { method: "DELETE" });
 }
 
+// --- Analytics ---
+export function fetchAllCustomersDetail() {
+  if (DEMO_MODE) return mockApi.fetchAllCustomersDetail();
+  return request<{ data: CustomerDetail[] }>("/customers/all?include=reservations");
+}
+
 // --- Dashboard ---
 export function fetchDashboardStats() {
   if (DEMO_MODE) return mockApi.fetchDashboardStats();

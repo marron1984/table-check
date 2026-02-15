@@ -119,6 +119,13 @@ export async function removeTag(_tagId: string, _customerId: string): Promise<{ 
   return { success: true };
 }
 
+// ---- Analytics (bulk customer detail) ----
+
+export async function fetchAllCustomersDetail(): Promise<{ data: CustomerDetail[] }> {
+  await delay();
+  return { data: allCustomers };
+}
+
 // ---- Dashboard ----
 
 export async function fetchDashboardStats(): Promise<{ data: DashboardStats }> {

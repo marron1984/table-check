@@ -5,6 +5,7 @@ import { fetchReservation } from "../api";
 import { TagBadge } from "../components/TagBadge";
 import { AlertList } from "../components/AlertBadge";
 import { ScoreBar } from "../components/ScoreBar";
+import { analyzeLtv } from "../components/LtvAnalysis";
 
 export function ReservationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -81,19 +82,32 @@ export function ReservationDetail() {
             <div className="info-row"><span className="info-label">アレルギー</span>{c.allergies}</div>
           )}
 
-          {(c.ltvScore != null || c.returnProbability90 != null) && (
-            <>
-              {c.ltvScore != null && (
-                <div className="info-row"><span className="info-label">LTV</span>{c.ltvScore.toLocaleString()}円</div>
-              )}
-              {c.returnProbability90 != null && (
-                <div className="info-row"><ScoreBar value={c.returnProbability90} label="再来店90日" color="#43a047" /></div>
-              )}
-              {c.cancelRisk != null && (
-                <div className="info-row"><ScoreBar value={c.cancelRisk} label="キャンセル" color="#e53935" /></div>
-              )}
-            </>
-          )}
+          {c.reservations && c.reservations.length > 0 && (() => {
+            const ltv = analyzeLtv(c.reservations, c.ltvScore ?? null);
+            return (
+              <>
+                <div className="info-row">
+                  <span className="info-label">セグメント</span>
+                  <span style={{
+                    padding: "1px 8px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+                    background: ltv.segmentColor + "18", color: ltv.segmentColor,
+                  }}>{ltv.segmentLabel}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">予測LTV(12m)</span>
+                  {ltv.predictedLtv12m >= 10000
+                    ? `${(ltv.predictedLtv12m / 10000).toFixed(1)}万`
+                    : `¥${ltv.predictedLtv12m.toLocaleString()}`}
+                </div>
+                <div className="info-row">
+                  <span className="info-label">P(Active)</span>{Math.round(ltv.isAlive * 100)}%
+                </div>
+                {c.cancelRisk != null && (
+                  <div className="info-row"><ScoreBar value={c.cancelRisk} label="キャンセル" color="#e53935" /></div>
+                )}
+              </>
+            );
+          })()}
 
           {c.reservations && c.reservations.length > 0 && (
             <>

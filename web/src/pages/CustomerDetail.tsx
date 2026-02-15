@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { fetchCustomer, updateCustomer } from "../api";
 import { TagBadge } from "../components/TagBadge";
 import { ScoreBar } from "../components/ScoreBar";
+import { LtvPanel } from "../components/LtvAnalysis";
 
 export function CustomerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -129,18 +130,8 @@ function CustomerView({ customer: c }: { customer: CustomerDetailData }) {
         </div>
       )}
 
-      {/* Scores */}
-      {(c.ltvScore != null || c.returnProbability90 != null) && (
-        <div className="card">
-          <div className="section-title">スコア</div>
-          {c.ltvScore != null && (
-            <div className="info-row" style={{ fontSize: 16, fontWeight: 700 }}>LTV: {c.ltvScore.toLocaleString()}円</div>
-          )}
-          {c.returnProbability90 != null && <div className="info-row"><ScoreBar value={c.returnProbability90} label="再来店90日" color="#43a047" /></div>}
-          {c.returnProbability180 != null && <div className="info-row"><ScoreBar value={c.returnProbability180} label="再来店180日" color="#0288d1" /></div>}
-          {c.cancelRisk != null && <div className="info-row"><ScoreBar value={c.cancelRisk} label="キャンセル" color="#e53935" /></div>}
-        </div>
-      )}
+      {/* LTV Analysis */}
+      <LtvPanel reservations={c.reservations || []} existingLtv={c.ltvScore} />
 
       {/* Memberships */}
       {c.memberships && c.memberships.length > 0 && (

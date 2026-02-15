@@ -20,10 +20,9 @@ export function SyncStatus() {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h1 className="page-title" style={{ marginBottom: 0 }}>同期ステータス</h1>
+      <div style={{ marginBottom: 12 }}>
         <button
-          className="btn btn-primary"
+          className="btn btn-primary btn-full"
           onClick={() => backfill.mutate()}
           disabled={backfill.isPending}
         >
@@ -32,53 +31,42 @@ export function SyncStatus() {
       </div>
 
       {backfill.isSuccess && (
-        <div className="card" style={{ marginBottom: 12, background: "#f0fdf4", borderColor: "#bbf7d0" }}>
-          <p style={{ fontSize: 13, color: "#16a34a" }}>バックフィルを開始しました。処理完了まで数分かかる場合があります。</p>
+        <div className="card" style={{ padding: 12, marginBottom: 8, background: "#e8f5e9" }}>
+          <p style={{ fontSize: 12, color: "#2e7d32" }}>バックフィルを開始しました</p>
         </div>
       )}
 
       {backfill.isError && (
-        <div className="card" style={{ marginBottom: 12, background: "#fef2f2", borderColor: "#fecaca" }}>
-          <p style={{ fontSize: 13, color: "#dc2626" }}>バックフィルの実行に失敗しました: {(backfill.error as Error).message}</p>
+        <div className="card" style={{ padding: 12, marginBottom: 8, background: "#fef2f2" }}>
+          <p style={{ fontSize: 12, color: "#c62828" }}>失敗: {(backfill.error as Error).message}</p>
         </div>
       )}
 
       {isLoading ? (
         <div className="loading">読み込み中...</div>
       ) : !data?.data?.length ? (
-        <div className="empty-state"><p>同期データがありません。バックフィルを実行してください。</p></div>
+        <div className="empty-state"><p>同期データがありません</p></div>
       ) : (
         <div className="card">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>エンティティ</th>
-                <th>ステータス</th>
-                <th>同期件数</th>
-                <th>最終同期</th>
-                <th>エラー</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.data.map((s: SyncState) => (
-                <tr key={s.id}>
-                  <td style={{ fontWeight: 600 }}>{entityLabel(s.objectType)}</td>
-                  <td>
-                    <span className={`sync-status sync-status-${s.status.toLowerCase()}`}>
-                      {statusLabel(s.status)}
-                    </span>
-                  </td>
-                  <td style={{ fontSize: 13 }}>{s.recordsSynced.toLocaleString()}件</td>
-                  <td style={{ fontSize: 13 }}>
-                    {s.lastSyncAt ? format(new Date(s.lastSyncAt), "yyyy/MM/dd HH:mm:ss") : "--"}
-                  </td>
-                  <td style={{ fontSize: 13, color: s.errorMessage ? "var(--color-danger)" : "var(--color-text-muted)" }}>
-                    {s.errorMessage || "--"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {data.data.map((s: SyncState, i: number) => (
+            <div key={s.id} className="info-row" style={{ borderBottom: i < data.data.length - 1 ? undefined : "none", alignItems: "flex-start", padding: "10px 12px" }}>
+              <div style={{ minWidth: 50 }}>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>{entityLabel(s.objectType)}</div>
+                <span className={`sync-status sync-status-${s.status.toLowerCase()}`}>
+                  {statusLabel(s.status)}
+                </span>
+              </div>
+              <div style={{ flex: 1, textAlign: "right" }}>
+                <div style={{ fontSize: 13 }}>{s.recordsSynced.toLocaleString()}件</div>
+                <div style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                  {s.lastSyncAt ? format(new Date(s.lastSyncAt), "M/d HH:mm") : "--"}
+                </div>
+                {s.errorMessage && (
+                  <div style={{ fontSize: 11, color: "var(--color-danger)" }}>{s.errorMessage}</div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -96,20 +84,9 @@ interface SyncState {
 }
 
 function entityLabel(type: string): string {
-  const labels: Record<string, string> = {
-    customer: "顧客",
-    reservation: "予約",
-    shop: "店舗",
-  };
-  return labels[type] || type;
+  return { customer: "顧客", reservation: "予約", shop: "店舗" }[type] || type;
 }
 
 function statusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    idle: "待機中",
-    running: "実行中",
-    completed: "完了",
-    error: "エラー",
-  };
-  return labels[status] || status;
+  return { idle: "待機中", running: "実行中", completed: "完了", error: "エラー" }[status] || status;
 }

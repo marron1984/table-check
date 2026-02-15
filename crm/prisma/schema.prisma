@@ -1,0 +1,243 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Store
+// ============================================================
+model Store {
+  id             String        @id @default(cuid())
+  externalId     String        @unique // TableCheck shop ID
+  name           String
+  slug           String        @unique
+  timezone       String        @default("Asia/Tokyo")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  reservations   Reservation[]
+  users          UserStore[]
+}
+
+// ============================================================
+// Auth & RBAC
+// ============================================================
+model User {
+  id             String        @id @default(cuid())
+  email          String        @unique
+  passwordHash   String
+  displayName    String
+  role           String        @default("viewer") // admin | manager | staff | viewer | analyst
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  stores         UserStore[]
+  auditLogs      AuditLog[]
+}
+
+model UserStore {
+  userId  String
+  storeId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, storeId])
+}
+
+// ============================================================
+// Customer (canonical)
+// ============================================================
+model Customer {
+  id                String            @id @default(cuid())
+  displayName       String
+  kanaName          String?
+  email             String?
+  emailNormalized   String?
+  phone             String?
+  phoneNormalized   String?
+  locale            String?
+  region            String?
+  allergySeverity   String            @default("none") // none | light | severe
+  preferences       String            @default("{}") // JSON
+  visitsCount       Int               @default(0)
+  lastVisitAt       DateTime?
+  totalSpendApprox  Int               @default(0)
+  cancelCount       Int               @default(0)
+  noShowCount       Int               @default(0)
+  mergedIntoId      String?
+  mergedInto        Customer?         @relation("CustomerMerge", fields: [mergedIntoId], references: [id])
+  mergedFrom        Customer[]        @relation("CustomerMerge")
+  deletedAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  sources           CustomerSource[]
+  reservations      Reservation[]
+  tags              CustomerTag[]
+  notes             ReservationNote[]
+  mergeCandidatesA  MergeCandidate[]  @relation("MergeCandidateA")
+  mergeCandidatesB  MergeCandidate[]  @relation("MergeCandidateB")
+
+  @@index([phoneNormalized])
+  @@index([emailNormalized])
+  @@index([displayName])
+}
+
+// ============================================================
+// CustomerSource (TableCheck原本参照)
+// ============================================================
+model CustomerSource {
+  id             String      @id @default(cuid())
+  externalId     String      @unique // TableCheck customer ID
+  customerId     String
+  customer       Customer    @relation(fields: [customerId], references: [id])
+  rawPayload     String      @default("{}") // original JSON from TableCheck
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  reservations   Reservation[] @relation("ReservationSource")
+
+  @@index([externalId])
+}
+
+// ============================================================
+// Reservation
+// ============================================================
+model Reservation {
+  id               String           @id @default(cuid())
+  externalId       String           @unique // TableCheck reservation ID
+  storeId          String
+  store            Store            @relation(fields: [storeId], references: [id])
+  customerId       String
+  customer         Customer         @relation(fields: [customerId], references: [id])
+  customerSourceId String?
+  customerSource   CustomerSource?  @relation("ReservationSource", fields: [customerSourceId], references: [id])
+  startsAt         DateTime
+  partySize        Int              @default(2)
+  status           String           @default("confirmed") // confirmed | seated | completed | cancelled | no_show
+  channel          String?
+  courseName       String?
+  tableInfo        String?
+  flags            String           @default("{}") // JSON: { vip, severeAllergy, noShowRisk, anniversary }
+  rawPayload       String           @default("{}") // original JSON
+  deletedAt        DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  notes            ReservationNote[]
+
+  @@index([storeId, startsAt])
+  @@index([customerId])
+  @@index([status])
+}
+
+// ============================================================
+// Notes (自社メモ)
+// ============================================================
+model ReservationNote {
+  id             String       @id @default(cuid())
+  customerId     String
+  customer       Customer     @relation(fields: [customerId], references: [id])
+  reservationId  String?
+  reservation    Reservation? @relation(fields: [reservationId], references: [id])
+  content        String
+  authorName     String
+  createdAt      DateTime     @default(now())
+}
+
+// ============================================================
+// Tags
+// ============================================================
+model Tag {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  label       String
+  color       String        @default("#6b7280")
+  isAuto      Boolean       @default(false)
+  autoRule    String?       // JSON rule definition for auto-assignment
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  customers   CustomerTag[]
+}
+
+model CustomerTag {
+  customerId String
+  tagId      String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  assignedAt DateTime @default(now())
+  assignedBy String?  // userId or "system"
+
+  @@id([customerId, tagId])
+}
+
+// ============================================================
+// SyncEvent (Webhook events)
+// ============================================================
+model SyncEvent {
+  id          String   @id @default(cuid())
+  eventType   String   // reservation.created, customer.updated, etc.
+  objectType  String   // reservation | customer
+  objectId    String   // external ID of the object
+  payload     String   // full JSON payload
+  status      String   @default("pending") // pending | processing | processed | failed
+  attempts    Int      @default(0)
+  lastError   String?
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([objectType, objectId])
+}
+
+// ============================================================
+// MergeCandidate
+// ============================================================
+model MergeCandidate {
+  id          String   @id @default(cuid())
+  customerAId String
+  customerBId String
+  customerA   Customer @relation("MergeCandidateA", fields: [customerAId], references: [id])
+  customerB   Customer @relation("MergeCandidateB", fields: [customerBId], references: [id])
+  score       Float    // 0.0 - 1.0
+  reasons     String   // JSON array of reasons
+  status      String   @default("pending") // pending | merged | rejected
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@unique([customerAId, customerBId])
+  @@index([status])
+}
+
+// ============================================================
+// AuditLog
+// ============================================================
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String   // view | edit | merge | export | login | sync
+  entityType String?  // customer | reservation | tag | etc
+  entityId   String?
+  detail     String?  // JSON
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([action, createdAt])
+  @@index([entityType, entityId])
+}
+
+// ============================================================
+// MessageLog (将来用)
+// ============================================================
+model MessageLog {
+  id          String   @id @default(cuid())
+  customerId  String?
+  channel     String   // sms | email | line
+  direction   String   // inbound | outbound
+  content     String
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+}

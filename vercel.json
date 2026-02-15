@@ -1,14 +1,12 @@
 {
-  "installCommand": "cd web && npm install",
-  "buildCommand": "cd web && npm run build",
-  "outputDirectory": "web/dist",
-  "framework": "vite",
-  "build": {
-    "env": {
-      "VITE_DEMO_MODE": "true"
+  "installCommand": "cd crm && npm install",
+  "buildCommand": "cd crm && npx prisma generate && npm run build",
+  "outputDirectory": "crm/.next",
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/jobs/process-sync",
+      "schedule": "*/5 * * * *"
     }
-  },
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

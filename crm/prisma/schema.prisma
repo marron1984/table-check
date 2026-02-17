@@ -58,6 +58,8 @@ model Customer {
   emailNormalized   String?
   phone             String?
   phoneNormalized   String?
+  gender            String?           // male | female | other
+  salesRep          String?           // 営業担当
   locale            String?
   region            String?
   allergySeverity   String            @default("none") // none | light | severe

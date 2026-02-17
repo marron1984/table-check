@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/merge-queue", label: "統合キュー", icon: "🔗" },
   { href: "/tags", label: "タグ管理", icon: "🏷️" },
   { href: "/reports/basic", label: "レポート", icon: "📊" },
+  { href: "/import", label: "CSVインポート", icon: "📁" },
 ];
 
 export function Sidebar() {
